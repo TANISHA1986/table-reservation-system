@@ -1,0 +1,88 @@
+<%- include('../partials/header') %>
+<%- include('../partials/navbar', { user: user }) %>
+
+<div class="container">
+  <div class="page-header">
+    <h1>Book a Table</h1>
+  </div>
+
+  <div class="booking-container">
+    <form id="bookingForm" class="booking-form">
+      <div class="form-group">
+        <label for="tableId">Select Table</label>
+        <select id="tableId" name="tableId" required>
+          <option value="">Choose a table...</option>
+          <% tables.forEach(table => { %>
+            <option value="<%= table._id %>">
+              Table <%= table.tableNumber %> (Capacity: <%= table.capacity %>)
+            </option>
+          <% }); %>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="date">Date</label>
+          <input type="date" id="date" name="date" required min="<%= new Date().toISOString().split('T')[0] %>">
+        </div>
+
+        <div class="form-group">
+          <label for="guestCount">Number of Guests</label>
+          <input type="number" id="guestCount" name="guestCount" required min="1" max="20">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="startTime">Start Time</label>
+          <input type="time" id="startTime" name="startTime" required>
+        </div>
+
+        <div class="form-group">
+          <label for="endTime">End Time</label>
+          <input type="time" id="endTime" name="endTime" required>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block">Book Table</button>
+    </form>
+  </div>
+</div>
+
+<script>
+document.getElementById('bookingForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const formData = {
+    tableId: document.getElementById('tableId').value,
+    date: document.getElementById('date').value,
+    startTime: document.getElementById('startTime').value,
+    endTime: document.getElementById('endTime').value,
+    guestCount: parseInt(document.getElementById('guestCount').value)
+  };
+
+  try {
+    const response = await fetch('/api/reservations/book', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify(formData)
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      alert('Reservation created successfully!');
+      window.location.href = '/my-reservations';
+    } else {
+      alert(data.message || 'Booking failed');
+    }
+  } catch (error) {
+    alert('Error: ' + error.message);
+  }
+});
+</script>
+
+<%- include('../partials/footer') %>

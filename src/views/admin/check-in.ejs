@@ -1,0 +1,141 @@
+<%- include('../partials/header') %>
+<%- include('../partials/navbar', { user: user }) %>
+
+<div class="container">
+  <div class="page-header">
+    <h1>Check-In Guests</h1>
+    <a href="/admin/dashboard" class="btn btn-secondary">Back to Dashboard</a>
+  </div>
+
+  <div class="section">
+    <h2>Manual Check-In</h2>
+    <p style="color: #666; margin-bottom: 2rem;">Enter the verification code from guest's QR code</p>
+    
+    <form id="checkinForm" class="inline-form">
+      <input 
+        type="text" 
+        id="verificationCode" 
+        placeholder="Enter 8-digit code (e.g., ABC12345)" 
+        required 
+        maxlength="8"
+        style="flex: 2; text-transform: uppercase; font-family: monospace; font-size: 1.2rem; font-weight: 700;"
+      >
+      <button type="submit" class="btn btn-primary">Check-In</button>
+    </form>
+
+    <div id="checkinResult" style="display: none; margin-top: 2rem;"></div>
+  </div>
+
+  <div class="section">
+    <h2>Today's Reservations</h2>
+    <div id="todayReservations">
+      <p style="text-align: center; color: #999;">Loading...</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// Auto-convert to uppercase
+document.getElementById('verificationCode').addEventListener('input', function(e) {
+  e.target.value = e.target.value.toUpperCase();
+});
+
+// Check-in form
+document.getElementById('checkinForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  
+  const code = document.getElementById('verificationCode').value.trim();
+  const resultDiv = document.getElementById('checkinResult');
+  
+  if (code.length !== 8) {
+    resultDiv.innerHTML = '<div class="alert alert-error">Verification code must be 8 characters</div>';
+    resultDiv.style.display = 'block';
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/reservations/checkin', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + localStorage.getItem('token')
+      },
+      credentials: 'include',
+      body: JSON.stringify({ verificationCode: code })
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      const reservation = data.data.reservation;
+      resultDiv.innerHTML = `
+        <div class="alert alert-success">
+          <h3 style="margin: 0 0 1rem 0; color: #2e7d32;">✅ Check-In Successful!</h3>
+          <p style="margin: 0.5rem 0;"><strong>Guest:</strong> ${reservation.userId.name}</p>
+          <p style="margin: 0.5rem 0;"><strong>Table:</strong> ${reservation.tableId.tableNumber}</p>
+          <p style="margin: 0.5rem 0;"><strong>Guests:</strong> ${reservation.guestCount}</p>
+          <p style="margin: 0.5rem 0;"><strong>Time:</strong> ${reservation.startTime} - ${reservation.endTime}</p>
+        </div>
+      `;
+      document.getElementById('verificationCode').value = '';
+      loadTodayReservations();
+    } else {
+      resultDiv.innerHTML = `<div class="alert alert-error">❌ ${data.message}</div>`;
+    }
+    
+    resultDiv.style.display = 'block';
+  } catch (error) {
+    resultDiv.innerHTML = `<div class="alert alert-error">❌ Error: ${error.message}</div>`;
+    resultDiv.style.display = 'block';
+  }
+});
+
+// Load today's reservations
+async function loadTodayReservations() {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const response = await fetch('/api/admin/reservations?date=' + today, {
+      headers: {
+        'Authorization': 'Bearer ' + localStorage.getItem('token')
+      },
+      credentials: 'include'
+    });
+
+    const data = await response.json();
+
+    if (data.success && data.data.reservations.length > 0) {
+      const reservations = data.data.reservations;
+      let html = '<div class="table-responsive"><table class="data-table"><thead><tr><th>Guest</th><th>Table</th><th>Time</th><th>Guests</th><th>Status</th><th>Checked In</th></tr></thead><tbody>';
+      
+      reservations.forEach(res => {
+        const checkedInBadge = res.checkedIn 
+          ? '<span class="badge" style="background: #17a2b8; color: white;">✓ Yes</span>' 
+          : '<span style="color: #999;">No</span>';
+        
+        html += `
+          <tr>
+            <td>${res.userId.name}</td>
+            <td>Table ${res.tableId.tableNumber}</td>
+            <td>${res.startTime}</td>
+            <td>${res.guestCount}</td>
+            <td><span class="badge badge-${res.status.toLowerCase()}">${res.status}</span></td>
+            <td>${checkedInBadge}</td>
+          </tr>
+        `;
+      });
+      
+      html += '</tbody></table></div>';
+      document.getElementById('todayReservations').innerHTML = html;
+    } else {
+      document.getElementById('todayReservations').innerHTML = '<p style="text-align: center; color: #999;">No reservations for today</p>';
+    }
+  } catch (error) {
+    document.getElementById('todayReservations').innerHTML = '<p style="text-align: center; color: #c41e3a;">Error loading reservations</p>';
+  }
+}
+
+// Load on page load
+loadTodayReservations();
+</script>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,147 @@
+<%- include('../partials/header') %>
+<%- include('../partials/navbar', { user: user }) %>
+
+<div class="container">
+  <div class="page-header">
+    <h1>My Reservations</h1>
+    <a href="/book-table" class="btn btn-primary">New Reservation</a>
+  </div>
+
+  <% if (reservations && reservations.length > 0) { %>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Table</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Guests</th>
+            <th>Status</th>
+            <th>QR Code</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% reservations.forEach(reservation => { %>
+            <tr>
+              <td>Table <%= reservation.tableId.tableNumber %></td>
+              <td><%= new Date(reservation.date).toLocaleDateString() %></td>
+              <td><%= reservation.startTime %> - <%= reservation.endTime %></td>
+              <td><%= reservation.guestCount %></td>
+              <td>
+                <% if (reservation.status === 'BOOKED') { %>
+                  <span class="badge badge-success">Booked</span>
+                <% } else if (reservation.status === 'CANCELLED') { %>
+                  <span class="badge badge-danger">Cancelled</span>
+                <% } else if (reservation.status === 'COMPLETED') { %>
+                  <span class="badge" style="background: linear-gradient(135deg, #28a745 0%, #218838 100%); color: white;">Completed</span>
+                <% } else if (reservation.status === 'NO_SHOW') { %>
+                  <span class="badge" style="background: linear-gradient(135deg, #6c757d 0%, #545b62 100%); color: white;">No Show</span>
+                <% } %>
+                <% if (reservation.checkedIn) { %>
+                  <br><span class="badge" style="background: #17a2b8; color: white; margin-top: 5px;">✓ Checked In</span>
+                <% } %>
+              </td>
+              <td>
+                <% if (reservation.qrCode && reservation.status === 'BOOKED') { %>
+                  <button onclick="showQRCode('<%= reservation.qrCode %>', '<%= reservation.verificationCode %>')" class="btn btn-sm btn-primary">
+                    View QR
+                  </button>
+                <% } else { %>
+                  <span style="color: #999;">N/A</span>
+                <% } %>
+              </td>
+              <td>
+                <% if (reservation.status === 'BOOKED') { %>
+                  <button onclick="cancelReservation('<%= reservation._id %>')" class="btn btn-sm btn-danger">
+                    Cancel
+                  </button>
+                <% } %>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  <% } else { %>
+    <div class="no-data">
+      <p>You don't have any reservations yet.</p>
+      <a href="/book-table" class="btn btn-primary">Book Your First Table</a>
+    </div>
+  <% } %>
+</div>
+
+<!-- QR Code Modal -->
+<div id="qrModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center;">
+  <div style="background: white; padding: 3rem; border-radius: 20px; text-align: center; max-width: 500px; position: relative;">
+    <button onclick="closeQRModal()" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 2rem; cursor: pointer; color: #999;">&times;</button>
+    <h2 style="margin-bottom: 2rem; color: var(--charcoal); font-family: var(--font-display);">Your Reservation QR Code</h2>
+    <div style="background: white; padding: 20px; border-radius: 15px; border: 3px solid var(--primary-gold); display: inline-block; box-shadow: var(--shadow-lg);">
+      <img id="qrImage" src="" alt="QR Code" style="width: 300px; height: 300px; display: block;">
+    </div>
+    <div style="margin-top: 2rem; background: var(--light-gold); padding: 1.5rem; border-radius: 10px;">
+      <p style="margin: 0; color: var(--charcoal); font-weight: 600; font-size: 1.1rem;">Verification Code</p>
+      <p id="verificationCode" style="margin: 0.5rem 0 0; font-size: 2rem; font-weight: 800; color: var(--deep-navy); letter-spacing: 3px; font-family: monospace;"></p>
+    </div>
+    <p style="margin-top: 2rem; color: #666; font-size: 0.95rem;">Show this QR code at the restaurant entrance for quick check-in</p>
+    <button onclick="downloadQR()" class="btn btn-primary" style="margin-top: 1.5rem;">Download QR Code</button>
+  </div>
+</div>
+
+<script>
+let currentQRCode = '';
+
+function showQRCode(qrCode, verificationCode) {
+  currentQRCode = qrCode;
+  document.getElementById('qrImage').src = qrCode;
+  document.getElementById('verificationCode').textContent = verificationCode;
+  document.getElementById('qrModal').style.display = 'flex';
+}
+
+function closeQRModal() {
+  document.getElementById('qrModal').style.display = 'none';
+}
+
+function downloadQR() {
+  const link = document.createElement('a');
+  link.href = currentQRCode;
+  link.download = 'reservation-qr-code.png';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+// Close modal on outside click
+document.getElementById('qrModal').addEventListener('click', function(e) {
+  if (e.target === this) {
+    closeQRModal();
+  }
+});
+
+async function cancelReservation(id) {
+  if (!confirm('Are you sure you want to cancel this reservation?')) return;
+
+  try {
+    const response = await fetch('/api/reservations/' + id, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': 'Bearer ' + localStorage.getItem('token')
+      },
+      credentials: 'include'
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      alert('✅ ' + data.message);
+      location.reload();
+    } else {
+      alert('❌ ' + (data.message || 'Cancellation failed'));
+    }
+  } catch (error) {
+    alert('❌ Error: ' + error.message);
+  }
+}
+</script>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,34 @@
+<%- include('../partials/header') %>
+<%- include('../partials/navbar', { user: user }) %>
+
+<div class="container">
+  <div class="page-header">
+    <h1>Admin Dashboard</h1>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <h3><%= stats.totalTables %></h3>
+      <p>Total Tables</p>
+    </div>
+    <div class="stat-card">
+      <h3><%= stats.activeTables %></h3>
+      <p>Active Tables</p>
+    </div>
+    <div class="stat-card">
+      <h3><%= stats.todayReservations %></h3>
+      <p>Today's Reservations</p>
+    </div>
+    <div class="stat-card">
+      <h3><%= stats.totalReservations %></h3>
+      <p>Total Reservations</p>
+    </div>
+  </div>
+
+  <div class="admin-actions">
+    <a href="/admin/tables" class="btn btn-primary">Manage Tables</a>
+    <a href="/admin/reservations" class="btn btn-secondary">View All Reservations</a>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

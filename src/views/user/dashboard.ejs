@@ -1,0 +1,34 @@
+<%- include('../partials/header') %>
+<%- include('../partials/navbar', { user: user }) %>
+
+<div class="dashboard-container">
+  <div class="container">
+    <h1>Welcome, <%= user.name %>! 👋</h1>
+    
+    <div class="dashboard-actions">
+      <a href="/book-table" class="btn btn-primary">Book a Table</a>
+      <a href="/my-reservations" class="btn btn-secondary">View My Reservations</a>
+    </div>
+
+    <div class="section">
+      <h2>Upcoming Reservations</h2>
+      <% if (reservations && reservations.length > 0) { %>
+        <div class="reservations-grid">
+          <% reservations.forEach(reservation => { %>
+            <div class="reservation-card">
+              <h3>Table <%= reservation.tableId.tableNumber %></h3>
+              <p><strong>Date:</strong> <%= new Date(reservation.date).toLocaleDateString() %></p>
+              <p><strong>Time:</strong> <%= reservation.startTime %> - <%= reservation.endTime %></p>
+              <p><strong>Guests:</strong> <%= reservation.guestCount %></p>
+              <p><strong>Status:</strong> <span class="badge badge-<%= reservation.status.toLowerCase() %>"><%= reservation.status %></span></p>
+            </div>
+          <% }); %>
+        </div>
+      <% } else { %>
+        <p class="no-data">No upcoming reservations. <a href="/book-table">Book now!</a></p>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

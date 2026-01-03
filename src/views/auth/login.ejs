@@ -1,0 +1,93 @@
+<%- include('../partials/header') %>
+<%- include('../partials/navbar', { user: null }) %>
+
+<div class="auth-container">
+  <div class="auth-card">
+    <h2>Login</h2>
+    
+    <div id="errorMessage" style="display:none;" class="alert alert-error"></div>
+    <div id="successMessage" style="display:none;" class="alert alert-success"></div>
+    
+    <form id="loginForm">
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" required>
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block" id="submitBtn">Login</button>
+    </form>
+    <p class="auth-link">Don't have an account? <a href="/register">Register here</a></p>
+  </div>
+</div>
+
+<script>
+function showError(message) {
+  const errorDiv = document.getElementById('errorMessage');
+  errorDiv.textContent = message;
+  errorDiv.style.display = 'block';
+  document.getElementById('successMessage').style.display = 'none';
+}
+
+function showSuccess(message) {
+  const successDiv = document.getElementById('successMessage');
+  successDiv.textContent = message;
+  successDiv.style.display = 'block';
+  document.getElementById('errorMessage').style.display = 'none';
+}
+
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const submitBtn = document.getElementById('submitBtn');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Logging in...';
+  
+  const formData = {
+    email: document.getElementById('email').value.trim(),
+    password: document.getElementById('password').value
+  };
+
+  try {
+    const response = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include', // Important: Include cookies
+      body: JSON.stringify(formData)
+    });
+
+    const data = await response.json();
+    console.log('Login response:', data);
+
+    if (data.success) {
+      // Store token in localStorage as backup
+      localStorage.setItem('token', data.data.token);
+      
+      showSuccess('Login successful! Redirecting...');
+      
+      setTimeout(() => {
+        if (data.data.user.role === 'ADMIN') {
+          window.location.href = '/admin/dashboard';
+        } else {
+          window.location.href = '/dashboard';
+        }
+      }, 1000);
+    } else {
+      showError(data.message || 'Login failed');
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Login';
+    }
+  } catch (error) {
+    console.error('Login error:', error);
+    showError('Network error. Please try again.');
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Login';
+  }
+});
+</script>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,486 @@
+<%- include('../partials/header') %>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.css">
+<style>
+  .analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-bottom: 3rem;
+  }
+
+  .analytics-card {
+    background: white;
+    padding: 2rem;
+    border-radius: 15px;
+    box-shadow: var(--shadow-md);
+    border-top: 4px solid var(--primary-gold);
+  }
+
+  .analytics-card h3 {
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    color: var(--charcoal);
+    margin-bottom: 1.5rem;
+    font-weight: 700;
+  }
+
+  .chart-container {
+    position: relative;
+    height: 350px;
+    margin-bottom: 2rem;
+  }
+
+  .chart-container-small {
+    height: 250px;
+  }
+
+  .metric-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 0;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .metric-row:last-child {
+    border-bottom: none;
+  }
+
+  .metric-label {
+    color: var(--slate);
+    font-weight: 600;
+  }
+
+  .metric-value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--primary-gold);
+    font-family: var(--font-display);
+  }
+
+  .table-rank {
+    display: inline-block;
+    width: 35px;
+    height: 35px;
+    line-height: 35px;
+    text-align: center;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-gold) 0%, var(--dark-gold) 100%);
+    color: var(--deep-navy);
+    font-weight: 800;
+    margin-right: 1rem;
+  }
+
+  .customer-row {
+    padding: 1rem;
+    background: var(--pearl-white);
+    border-radius: 10px;
+    margin-bottom: 1rem;
+    transition: all 0.3s;
+  }
+
+  .customer-row:hover {
+    background: var(--light-gold);
+    transform: translateX(5px);
+  }
+</style>
+<%- include('../partials/navbar', { user: user }) %>
+
+<div class="container">
+  <div class="page-header">
+    <h1>📊 Analytics Dashboard</h1>
+    <a href="/admin/dashboard" class="btn btn-secondary">Back to Dashboard</a>
+  </div>
+
+  <!-- Overview Stats -->
+  <div class="stats-grid" id="overviewStats">
+    <div class="stat-card">
+      <h3 id="totalReservations">0</h3>
+      <p>Total Reservations</p>
+    </div>
+    <div class="stat-card">
+      <h3 id="completedReservations">0</h3>
+      <p>Completed</p>
+    </div>
+    <div class="stat-card">
+      <h3 id="activeReservations">0</h3>
+      <p>Active Bookings</p>
+    </div>
+    <div class="stat-card">
+      <h3 id="totalRevenue">$0</h3>
+      <p>Total Revenue</p>
+    </div>
+  </div>
+
+  <!-- Performance Metrics -->
+  <div class="section">
+    <h2>📈 Performance Metrics</h2>
+    <div class="analytics-grid">
+      <div class="analytics-card">
+        <h3>Completion Rate</h3>
+        <div class="metric-row">
+          <span class="metric-label">Rate</span>
+          <span class="metric-value" id="completionRate">0%</span>
+        </div>
+      </div>
+      <div class="analytics-card">
+        <h3>Cancellation Rate</h3>
+        <div class="metric-row">
+          <span class="metric-label">Rate</span>
+          <span class="metric-value" id="cancellationRate">0%</span>
+        </div>
+      </div>
+      <div class="analytics-card">
+        <h3>No-Show Rate</h3>
+        <div class="metric-row">
+          <span class="metric-label">Rate</span>
+          <span class="metric-value" id="noShowRate">0%</span>
+        </div>
+      </div>
+      <div class="analytics-card">
+        <h3>Check-In Rate (Today)</h3>
+        <div class="metric-row">
+          <span class="metric-label">Rate</span>
+          <span class="metric-value" id="checkInRate">0%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Booking Trends Chart -->
+  <div class="section">
+    <h2>📅 Booking Trends (Last 30 Days)</h2>
+    <div class="chart-container">
+      <canvas id="trendsChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Status Distribution & Monthly Comparison -->
+  <div class="analytics-grid">
+    <div class="section">
+      <h2>📊 Status Distribution</h2>
+      <div class="chart-container chart-container-small">
+        <canvas id="statusChart"></canvas>
+      </div>
+    </div>
+    <div class="section">
+      <h2>📆 Monthly Comparison</h2>
+      <div class="chart-container chart-container-small">
+        <canvas id="monthlyChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Peak Hours -->
+  <div class="section">
+    <h2>⏰ Peak Hours Analysis</h2>
+    <div class="chart-container chart-container-small">
+      <canvas id="peakHoursChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Popular Tables & Top Customers -->
+  <div class="analytics-grid">
+    <div class="section">
+      <h2>🏆 Popular Tables</h2>
+      <div id="popularTables">
+        <p style="text-align: center; color: #999;">Loading...</p>
+      </div>
+    </div>
+    <div class="section">
+      <h2>👥 Top Customers</h2>
+      <div id="topCustomers">
+        <p style="text-align: center; color: #999;">Loading...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+
+<script>
+let trendsChart, statusChart, monthlyChart, peakHoursChart;
+
+// Fetch and display analytics
+async function loadAnalytics() {
+  try {
+    const token = localStorage.getItem('token');
+    const headers = {
+      'Authorization': 'Bearer ' + token,
+      'Content-Type': 'application/json'
+    };
+
+    // Load dashboard stats
+    const dashboardRes = await fetch('/api/analytics/dashboard', { headers, credentials: 'include' });
+    const dashboardData = await dashboardRes.json();
+    
+    if (dashboardData.success) {
+      updateOverviewStats(dashboardData.data);
+      updatePerformanceMetrics(dashboardData.data.performance);
+    }
+
+    // Load booking trends
+    const trendsRes = await fetch('/api/analytics/trends?days=30', { headers, credentials: 'include' });
+    const trendsData = await trendsRes.json();
+    
+    if (trendsData.success) {
+      createTrendsChart(trendsData.data);
+    }
+
+    // Load status distribution
+    const statusRes = await fetch('/api/analytics/status-distribution', { headers, credentials: 'include' });
+    const statusData = await statusRes.json();
+    
+    if (statusData.success) {
+      createStatusChart(statusData.data);
+    }
+
+    // Load monthly comparison
+    const monthlyRes = await fetch('/api/analytics/monthly-comparison', { headers, credentials: 'include' });
+    const monthlyData = await monthlyRes.json();
+    
+    if (monthlyData.success) {
+      createMonthlyChart(monthlyData.data);
+    }
+
+    // Load peak hours
+    const peakRes = await fetch('/api/analytics/peak-hours', { headers, credentials: 'include' });
+    const peakData = await peakRes.json();
+    
+    if (peakData.success) {
+      createPeakHoursChart(peakData.data);
+    }
+
+    // Load popular tables
+    const tablesRes = await fetch('/api/analytics/popular-tables', { headers, credentials: 'include' });
+    const tablesData = await tablesRes.json();
+    
+    if (tablesData.success) {
+      displayPopularTables(tablesData.data.tables);
+    }
+
+    // Load top customers
+    const customersRes = await fetch('/api/analytics/customers', { headers, credentials: 'include' });
+    const customersData = await customersRes.json();
+    
+    if (customersData.success) {
+      displayTopCustomers(customersData.data.customers);
+    }
+
+  } catch (error) {
+    console.error('Analytics loading error:', error);
+  }
+}
+
+function updateOverviewStats(data) {
+  document.getElementById('totalReservations').textContent = data.overview.totalReservations || 0;
+  document.getElementById('completedReservations').textContent = data.reservations.completed || 0;
+  document.getElementById('activeReservations').textContent = data.reservations.active || 0;
+  document.getElementById('totalRevenue').textContent = '$' + (data.revenue.total || 0).toLocaleString();
+}
+
+function updatePerformanceMetrics(performance) {
+  document.getElementById('completionRate').textContent = (performance.completionRate || 0) + '%';
+  document.getElementById('cancellationRate').textContent = (performance.cancellationRate || 0) + '%';
+  document.getElementById('noShowRate').textContent = (performance.noShowRate || 0) + '%';
+  document.getElementById('checkInRate').textContent = (performance.checkInRate || 0) + '%';
+}
+
+function createTrendsChart(data) {
+  const ctx = document.getElementById('trendsChart').getContext('2d');
+  
+  if (trendsChart) trendsChart.destroy();
+  
+  trendsChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: data.labels,
+      datasets: data.datasets
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: {
+            font: { size: 14, weight: 'bold' },
+            padding: 20
+          }
+        },
+        title: {
+          display: false
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            stepSize: 1
+          }
+        }
+      }
+    }
+  });
+}
+
+function createStatusChart(data) {
+  const ctx = document.getElementById('statusChart').getContext('2d');
+  
+  if (statusChart) statusChart.destroy();
+  
+  statusChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: data.labels,
+      datasets: [{
+        data: data.data,
+        backgroundColor: data.backgroundColor,
+        borderWidth: 3,
+        borderColor: '#fff'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            font: { size: 12, weight: 'bold' },
+            padding: 15
+          }
+        }
+      }
+    }
+  });
+}
+
+function createMonthlyChart(data) {
+  const ctx = document.getElementById('monthlyChart').getContext('2d');
+  
+  if (monthlyChart) monthlyChart.destroy();
+  
+  monthlyChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: data.labels,
+      datasets: [{
+        label: 'Reservations',
+        data: data.data,
+        backgroundColor: 'rgba(212, 175, 55, 0.8)',
+        borderColor: 'rgba(212, 175, 55, 1)',
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { stepSize: 1 }
+        }
+      }
+    }
+  });
+}
+
+function createPeakHoursChart(data) {
+  const ctx = document.getElementById('peakHoursChart').getContext('2d');
+  
+  if (peakHoursChart) peakHoursChart.destroy();
+  
+  peakHoursChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: data.labels,
+      datasets: [{
+        label: 'Bookings',
+        data: data.data,
+        backgroundColor: 'rgba(30, 126, 52, 0.8)',
+        borderColor: 'rgba(30, 126, 52, 1)',
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { stepSize: 1 }
+        }
+      }
+    }
+  });
+}
+
+function displayPopularTables(tables) {
+  const container = document.getElementById('popularTables');
+  
+  if (!tables || tables.length === 0) {
+    container.innerHTML = '<p style="text-align: center; color: #999;">No data available</p>';
+    return;
+  }
+
+  let html = '';
+  tables.forEach((table, index) => {
+    html += `
+      <div class="metric-row">
+        <div>
+          <span class="table-rank">${index + 1}</span>
+          <strong>Table ${table.tableNumber}</strong> (Capacity: ${table.capacity})
+        </div>
+        <div style="text-align: right;">
+          <div style="font-size: 1.2rem; font-weight: 700; color: var(--primary-gold);">${table.bookings} bookings</div>
+          <div style="font-size: 0.9rem; color: #666;">${table.totalGuests} total guests</div>
+        </div>
+      </div>
+    `;
+  });
+  
+  container.innerHTML = html;
+}
+
+function displayTopCustomers(customers) {
+  const container = document.getElementById('topCustomers');
+  
+  if (!customers || customers.length === 0) {
+    container.innerHTML = '<p style="text-align: center; color: #999;">No data available</p>';
+    return;
+  }
+
+  let html = '';
+  customers.forEach((customer, index) => {
+    html += `
+      <div class="customer-row">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <div>
+            <span class="table-rank">${index + 1}</span>
+            <strong>${customer.name}</strong>
+          </div>
+          <span style="font-size: 1.2rem; font-weight: 700; color: var(--primary-gold);">${customer.totalBookings} bookings</span>
+        </div>
+        <div style="font-size: 0.85rem; color: #666;">
+          ${customer.email} • ${customer.totalGuests} total guests • Avg: ${customer.avgGuestsPerBooking} per booking
+        </div>
+      </div>
+    `;
+  });
+  
+  container.innerHTML = html;
+}
+
+// Load analytics on page load
+loadAnalytics();
+</script>
+
+<%- include('../partials/footer') %>

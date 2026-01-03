@@ -1,0 +1,63 @@
+<%- include('partials/header') %>
+<%- include('partials/navbar', { user: null }) %>
+
+<div class="hero">
+  <div class="container">
+    <h1>Welcome to Luxury Dining</h1>
+    <p>Experience the finest table reservation with our premium platform</p>
+    <div class="hero-actions">
+      <a href="/register" class="btn btn-primary">Get Started</a>
+      <a href="/login" class="btn btn-secondary">Login</a>
+    </div>
+  </div>
+</div>
+
+<div class="features">
+  <div class="container">
+    <h2>Why Choose Us</h2>
+    <p style="text-align: center; color: var(--slate); font-size: 1.2rem; margin-bottom: 3rem;">Experience world-class dining reservation at your fingertips</p>
+    
+    <div class="feature-grid">
+      <div class="feature-card">
+        <h3>🎯 Seamless Booking</h3>
+        <p>Reserve your perfect table in just a few clicks with our intuitive booking system</p>
+      </div>
+      <div class="feature-card">
+        <h3>⏰ Real-time Updates</h3>
+        <p>Check instant table availability and receive immediate booking confirmations</p>
+      </div>
+      <div class="feature-card">
+        <h3>🔒 Secure Platform</h3>
+        <p>Your data is protected with enterprise-grade security and encryption</p>
+      </div>
+      <div class="feature-card">
+        <h3>📱 Responsive Design</h3>
+        <p>Access our platform seamlessly from any device, anywhere, anytime</p>
+      </div>
+    </div>
+
+    <div style="margin-top: 5rem; text-align: center;">
+      <h2 style="margin-bottom: 2rem;">Available Tables</h2>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <h3>🪑 Intimate Tables</h3>
+          <p>Perfect for couples<br><strong>3 tables • 2 guests</strong></p>
+        </div>
+        <div class="feature-card">
+          <h3>🪑🪑 Small Groups</h3>
+          <p>Ideal for friends<br><strong>4 tables • 4 guests</strong></p>
+        </div>
+        <div class="feature-card">
+          <h3>🪑🪑🪑 Family Dining</h3>
+          <p>Spacious seating<br><strong>3 tables • 6-8 guests</strong></p>
+        </div>
+        <div class="feature-card">
+          <h3>👑 VIP Experience</h3>
+          <p>Exclusive luxury<br><strong>2 tables • 10-12 guests</strong></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>
